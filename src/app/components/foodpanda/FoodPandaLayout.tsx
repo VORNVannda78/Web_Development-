@@ -260,6 +260,18 @@ export function FoodPandaLayout() {
               style={{ color: PINK }}>
               <Tag className="w-4 h-4" /> Promotions
             </button>
+            <button onClick={() => { navigate("/food/favorites"); setShowMobile(false); }}
+              className="w-full flex items-center justify-between py-2.5 px-3 rounded-lg text-sm font-bold hover:bg-pink-50 transition-colors"
+              style={{ color: isFavorites ? PINK : "#374151" }}>
+              <span className="flex items-center gap-2">
+                <Heart className="w-4 h-4" style={{ fill: isFavorites ? PINK : "transparent", stroke: isFavorites ? PINK : "currentColor" }} />
+                Saved
+              </span>
+              {favorites.size > 0 && (
+                <span className="min-w-5 h-5 px-1.5 rounded-full text-white text-xs flex items-center justify-center font-black"
+                  style={{ backgroundColor: PINK, fontSize: 10 }}>{favorites.size}</span>
+              )}
+            </button>
             {user ? (
               <div className="flex items-center justify-between py-2">
                 <div className="flex items-center gap-2">
@@ -349,11 +361,11 @@ export function FoodPandaLayout() {
       {/* ── MOBILE BOTTOM NAV ── */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-100"
         style={{ boxShadow: "0 -2px 12px rgba(0,0,0,0.08)" }}>
-        <div className="flex items-center justify-around h-16 px-2">
+        <div className="grid grid-cols-5 items-center h-16 px-2">
 
           {/* Home */}
           <button onClick={() => navigate("/food")}
-            className="flex flex-col items-center gap-1 flex-1 py-2 transition-colors"
+            className="flex flex-col items-center gap-1 py-2 transition-colors"
             style={isHome ? { color: PINK } : { color: "#9ca3af" }}>
             <Home className="w-5 h-5" />
             <span className="text-xs font-semibold">Home</span>
@@ -362,7 +374,7 @@ export function FoodPandaLayout() {
 
           {/* Promotions */}
           <button onClick={() => navigate("/food/promotions")}
-            className="flex flex-col items-center gap-1 flex-1 py-2 transition-colors"
+            className="flex flex-col items-center gap-1 py-2 transition-colors"
             style={isPromos ? { color: PINK } : { color: "#9ca3af" }}>
             <Tag className="w-5 h-5" />
             <span className="text-xs font-semibold">Deals</span>
@@ -370,7 +382,7 @@ export function FoodPandaLayout() {
 
           {/* Cart — center, elevated */}
           <button onClick={() => navigate("/food/cart")}
-            className="relative flex flex-col items-center justify-center flex-shrink-0 w-14 h-14 rounded-full -mt-5 shadow-lg transition-transform hover:scale-105"
+            className="relative col-start-3 justify-self-center flex items-center justify-center w-14 h-14 rounded-full -mt-5 shadow-lg transition-transform hover:scale-105"
             style={{ backgroundColor: PINK }}>
             <ShoppingCart className="w-5 h-5 text-white" />
             {totalItems > 0 && (
@@ -379,21 +391,9 @@ export function FoodPandaLayout() {
             )}
           </button>
 
-          {/* Favorites */}
-          <button onClick={() => navigate("/food/favorites")}
-            className="relative flex flex-col items-center gap-1 flex-1 py-2 transition-colors"
-            style={isFavorites ? { color: PINK } : { color: "#9ca3af" }}>
-            <Heart className="w-5 h-5" style={{ fill: isFavorites ? PINK : "transparent", stroke: "currentColor" }} />
-            <span className="text-xs font-semibold">Saved</span>
-            {favorites.size > 0 && !isFavorites && (
-              <span className="absolute top-1.5 right-4 w-4 h-4 rounded-full text-white text-xs flex items-center justify-center font-black"
-                style={{ backgroundColor: PINK, fontSize: 9 }}>{favorites.size}</span>
-            )}
-          </button>
-
           {/* Orders */}
           <button onClick={() => navigate("/food/orders")}
-            className="flex flex-col items-center gap-1 flex-1 py-2 transition-colors"
+            className="flex flex-col items-center gap-1 py-2 transition-colors"
             style={isOrders ? { color: PINK } : { color: "#9ca3af" }}>
             <ClipboardList className="w-5 h-5" />
             <span className="text-xs font-semibold">Orders</span>
@@ -401,7 +401,7 @@ export function FoodPandaLayout() {
 
           {/* Profile */}
           <button onClick={() => user ? undefined : openAuthModal()}
-            className="flex flex-col items-center gap-1 flex-1 py-2 transition-colors"
+            className="flex flex-col items-center gap-1 py-2 transition-colors"
             style={{ color: "#9ca3af" }}>
             {user ? (
               <div className="w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-black" style={{ backgroundColor: PINK }}>

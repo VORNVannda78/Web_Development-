@@ -1,0 +1,9 @@
+@import url("https://fonts.googleapis.com/css2?family=Kantumruy+Pro:wght@400;500;600;700;800;900&display=swap");
+
+:root {
+  --font-khmer-ui: "Kantumruy Pro", "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+body {
+  font-family: var(--font-khmer-ui);
+}

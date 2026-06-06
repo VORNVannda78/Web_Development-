@@ -14,7 +14,27 @@ const BANNER_INTERVAL = 5000;
 
 const filterTabs = ["All", "Free delivery", "Deals", "New", "Open now"];
 const pickupFilterTabs = ["All", "Deals", "New", "Open now"];
-const sortOptions = ["Recommended", "Rating", "Delivery time", "Min. order"];
+const sortOptions = ["Recommended", "Rating", "Delivery time", "Min. order", "Nearest", "Cheapest delivery"];
+
+const discoveryFilters = [
+  { id: "near", label: "Near me", hint: "Fastest delivery" },
+  { id: "top", label: "Top rated", hint: "4.5+ stars" },
+  { id: "always", label: "Open 24 hours", hint: "Available anytime" },
+  { id: "cheap", label: "Cheap delivery", hint: "$1 or less" },
+];
+
+const smartSearchTerms: Record<string, string> = {
+  piza: "Pizza",
+  pizaa: "Pizza",
+  burgur: "Burger",
+  burgr: "Burger",
+  chiken: "Chicken",
+  chikenburger: "Chicken",
+  noodls: "Noodles",
+  nodle: "Noodles",
+  coffe: "Coffee",
+  desert: "Desserts",
+};
 
 const heroBanners = [
   {
@@ -96,6 +116,7 @@ export function FoodPandaHome() {
   const [showAdvFilters, setShowAdvFilters] = useState(false);
   const [priceFilter, setPriceFilter] = useState<string[]>([]);
   const [dietaryFilter, setDietaryFilter] = useState<string[]>([]);
+  const [discoveryFilter, setDiscoveryFilter] = useState<string[]>([]);
   const [searchText, setSearchText] = useState("");
   const [isPlaying, setIsPlaying] = useState(true);
   const [progress, setProgress] = useState(0);
@@ -108,6 +129,9 @@ export function FoodPandaHome() {
   const banners = deliveryMode === "pickup" ? pickupBanners : heroBanners;
   const tabs = deliveryMode === "pickup" ? pickupFilterTabs : filterTabs;
   const safeBannerIdx = bannerIdx % banners.length;
+  const normalizedSearch = searchText.trim().toLowerCase();
+  const smartSuggestion = normalizedSearch ? smartSearchTerms[normalizedSearch] : "";
+  const effectiveSearch = (smartSuggestion || searchText).trim().toLowerCase();
 
   // Simulate loading
   useEffect(() => {
@@ -174,15 +198,21 @@ export function FoodPandaHome() {
     }
     if (dietaryFilter.includes("Vegetarian") && !r.cuisines.some(c => ["Healthy", "Salads"].includes(c))) return false;
     if (dietaryFilter.includes("Halal") && !r.isHalal) return false;
-    if (searchText) {
-      return r.name.toLowerCase().includes(searchText.toLowerCase()) ||
-        r.cuisines.some((c) => c.toLowerCase().includes(searchText.toLowerCase()));
+    if (discoveryFilter.includes("near") && parseInt(r.deliveryTime) > 25) return false;
+    if (discoveryFilter.includes("top") && r.rating < 4.5) return false;
+    if (discoveryFilter.includes("always") && (!r.isOpen || !["Breakfast", "Drinks", "Groceries"].some((c) => r.cuisines.includes(c)))) return false;
+    if (discoveryFilter.includes("cheap") && r.deliveryFee > 1) return false;
+    if (effectiveSearch) {
+      return r.name.toLowerCase().includes(effectiveSearch) ||
+        r.cuisines.some((c) => c.toLowerCase().includes(effectiveSearch));
     }
     return true;
   }).sort((a, b) => {
     if (sortBy === "Rating") return b.rating - a.rating;
     if (sortBy === "Delivery time") return parseInt(a.deliveryTime) - parseInt(b.deliveryTime);
     if (sortBy === "Min. order") return a.minOrder - b.minOrder;
+    if (sortBy === "Nearest") return parseInt(a.deliveryTime) - parseInt(b.deliveryTime);
+    if (sortBy === "Cheapest delivery") return a.deliveryFee - b.deliveryFee;
     return b.rating - a.rating;
   });
 
@@ -444,15 +474,15 @@ export function FoodPandaHome() {
             <button
               onClick={() => setShowAdvFilters(!showAdvFilters)}
               className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full border-2 bg-white text-xs font-bold text-gray-700 hover:border-gray-300 transition-colors"
-              style={(priceFilter.length > 0 || dietaryFilter.length > 0)
+              style={(priceFilter.length > 0 || dietaryFilter.length > 0 || discoveryFilter.length > 0)
                 ? { borderColor: PINK, color: PINK, backgroundColor: "#fff0f6" }
                 : { borderColor: "#e5e7eb" }}>
               <SlidersHorizontal className="w-3.5 h-3.5" />
               Filters
-              {(priceFilter.length + dietaryFilter.length) > 0 && (
+              {(priceFilter.length + dietaryFilter.length + discoveryFilter.length) > 0 && (
                 <span className="w-4 h-4 rounded-full text-white text-xs flex items-center justify-center font-black"
                   style={{ backgroundColor: PINK, fontSize: 9 }}>
-                  {priceFilter.length + dietaryFilter.length}
+                  {priceFilter.length + dietaryFilter.length + discoveryFilter.length}
                 </span>
               )}
             </button>

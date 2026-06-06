@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Search, CheckCircle, XCircle, Ban, Star, Clock } from "lucide-react";
+import { Ban, CheckCircle, Search, Store, XCircle } from "lucide-react";
 import { restaurants as initialRestaurants, type Restaurant } from "../../data/mockData";
 
 const pendingRestaurants: Restaurant[] = [
@@ -41,169 +41,187 @@ const pendingRestaurants: Restaurant[] = [
   },
 ];
 
+const merchantOwners: Record<string, string> = {
+  r1: "Sokha Lim",
+  r2: "Chan Dara",
+  r3: "Mey Vann",
+  r4: "Vicheka Sao",
+  r5: "Sopheap Kim",
+  r6: "Rithy Long",
+  r7: "Kosal Chea",
+  r8: "Nita Hor",
+};
+
 type TabType = "All" | "Pending" | "Approved" | "Blocked";
+
+function statusFor(restaurant: Restaurant) {
+  if (restaurant.isBlocked) return "Blocked";
+  if (!restaurant.isApproved) return "Pending";
+  return restaurant.isOpen ? "Active" : "Approved";
+}
+
+function StatusBadge({ status }: { status: string }) {
+  const tone =
+    status === "Active" || status === "Approved"
+      ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+      : status === "Pending"
+        ? "bg-amber-50 text-amber-700 border-amber-200"
+        : "bg-red-50 text-red-700 border-red-200";
+
+  return <span className={`rounded-md border px-2 py-1 text-xs font-black ${tone}`}>{status}</span>;
+}
+
+function money(value: number) {
+  return `$${value.toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
+}
 
 export function RestaurantManagement() {
   const [restaurants, setRestaurants] = useState<Restaurant[]>([...initialRestaurants, ...pendingRestaurants]);
   const [activeTab, setActiveTab] = useState<TabType>("All");
   const [search, setSearch] = useState("");
 
-  const filtered = restaurants.filter((r) => {
-    const matchesSearch = r.name.toLowerCase().includes(search.toLowerCase());
+  const filtered = restaurants.filter((restaurant) => {
+    const status = statusFor(restaurant);
+    const matchesSearch = `${restaurant.name} ${merchantOwners[restaurant.id]} ${restaurant.phone} ${restaurant.category}`
+      .toLowerCase()
+      .includes(search.toLowerCase());
     const matchesTab =
-      activeTab === "All" ? true :
-      activeTab === "Pending" ? !r.isApproved && !r.isBlocked :
-      activeTab === "Approved" ? r.isApproved && !r.isBlocked :
-      r.isBlocked;
+      activeTab === "All" ||
+      (activeTab === "Pending" && status === "Pending") ||
+      (activeTab === "Approved" && (status === "Active" || status === "Approved")) ||
+      (activeTab === "Blocked" && status === "Blocked");
+
     return matchesSearch && matchesTab;
   });
 
   const approve = (id: string) => {
-    setRestaurants((prev) => prev.map((r) => r.id === id ? { ...r, isApproved: true, isBlocked: false } : r));
+    setRestaurants((prev) => prev.map((restaurant) => (restaurant.id === id ? { ...restaurant, isApproved: true, isBlocked: false } : restaurant)));
   };
 
   const reject = (id: string) => {
-    setRestaurants((prev) => prev.filter((r) => r.id !== id));
+    setRestaurants((prev) => prev.filter((restaurant) => restaurant.id !== id));
   };
 
   const toggleBlock = (id: string) => {
-    setRestaurants((prev) => prev.map((r) => r.id === id ? { ...r, isBlocked: !r.isBlocked } : r));
+    setRestaurants((prev) => prev.map((restaurant) => (restaurant.id === id ? { ...restaurant, isBlocked: !restaurant.isBlocked } : restaurant)));
   };
 
   const tabCounts = {
     All: restaurants.length,
-    Pending: restaurants.filter((r) => !r.isApproved && !r.isBlocked).length,
-    Approved: restaurants.filter((r) => r.isApproved && !r.isBlocked).length,
-    Blocked: restaurants.filter((r) => r.isBlocked).length,
+    Pending: restaurants.filter((restaurant) => statusFor(restaurant) === "Pending").length,
+    Approved: restaurants.filter((restaurant) => ["Active", "Approved"].includes(statusFor(restaurant))).length,
+    Blocked: restaurants.filter((restaurant) => statusFor(restaurant) === "Blocked").length,
   };
 
   return (
-    <div className="pb-4">
-      <div className="bg-white px-4 py-3 border-b border-gray-100">
-        <h1 className="font-black text-lg text-gray-900">Restaurants</h1>
-      </div>
-
-      {/* Search */}
-      <div className="px-4 pt-4 pb-3">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-          <input
-            type="text"
-            placeholder="Search restaurants..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 bg-white rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-gray-300"
-          />
-        </div>
-      </div>
-
-      {/* Tabs */}
-      <div className="flex px-4 gap-2 mb-4 overflow-x-auto no-scrollbar">
-        {(Object.keys(tabCounts) as TabType[]).map((tab) => (
-          <button
-            key={tab}
-            onClick={() => setActiveTab(tab)}
-            className={`flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold flex items-center gap-1 ${
-              activeTab === tab ? "bg-gray-900 text-white" : "bg-white text-gray-600 border border-gray-200"
-            }`}
-          >
-            {tab}
-            <span className={`rounded-full px-1.5 py-0.5 text-xs ${activeTab === tab ? "bg-white/20" : "bg-gray-100"}`}>
-              {tabCounts[tab]}
-            </span>
-          </button>
-        ))}
-      </div>
-
-      {/* Restaurant List */}
-      <div className="px-4 space-y-4">
-        {filtered.map((restaurant) => (
-          <div key={restaurant.id} className={`bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100 ${restaurant.isBlocked ? "opacity-60" : ""}`}>
-            <div className="relative">
-              <img src={restaurant.image} alt={restaurant.name} className="w-full h-36 object-cover" />
-              <div className={`absolute top-2 right-2 px-2 py-0.5 rounded-full text-xs font-bold ${
-                restaurant.isBlocked ? "bg-red-500 text-white" :
-                restaurant.isApproved ? "bg-green-500 text-white" :
-                "bg-yellow-400 text-white"
-              }`}>
-                {restaurant.isBlocked ? "Blocked" : restaurant.isApproved ? "Approved" : "Pending"}
-              </div>
+    <div className="px-4 py-6 lg:px-6">
+      <div className="mx-auto max-w-7xl space-y-5">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+          <div>
+            <div className="mb-2 flex h-10 w-10 items-center justify-center rounded-lg bg-rose-50 text-rose-600">
+              <Store className="h-5 w-5" />
             </div>
-            <div className="p-4">
-              <div className="flex items-start justify-between mb-2">
-                <div>
-                  <div className="font-bold text-gray-900">{restaurant.name}</div>
-                  <div className="text-xs text-gray-500 mt-0.5">{restaurant.address}</div>
-                </div>
-                {restaurant.reviews > 0 && (
-                  <div className="flex items-center gap-1 bg-yellow-50 px-2 py-0.5 rounded-full">
-                    <Star className="w-3 h-3 text-yellow-500 fill-yellow-500" />
-                    <span className="text-xs font-bold text-gray-700">{restaurant.rating}</span>
-                  </div>
-                )}
-              </div>
-
-              <div className="flex items-center gap-3 text-xs text-gray-400 mb-3">
-                <span>{restaurant.category}</span>
-                <span>•</span>
-                <div className="flex items-center gap-1">
-                  <Clock className="w-3 h-3" />
-                  {restaurant.deliveryTime}
-                </div>
-                {restaurant.totalOrders > 0 && (
-                  <>
-                    <span>•</span>
-                    <span>{restaurant.totalOrders} orders</span>
-                  </>
-                )}
-              </div>
-
-              {/* Actions */}
-              <div className="flex gap-2">
-                {!restaurant.isApproved && !restaurant.isBlocked && (
-                  <>
-                    <button
-                      onClick={() => approve(restaurant.id)}
-                      className="flex-1 flex items-center justify-center gap-1.5 py-2.5 bg-green-500 text-white rounded-xl text-sm font-bold"
-                    >
-                      <CheckCircle className="w-4 h-4" />
-                      Approve
-                    </button>
-                    <button
-                      onClick={() => reject(restaurant.id)}
-                      className="flex-1 flex items-center justify-center gap-1.5 py-2.5 bg-red-50 text-red-500 rounded-xl text-sm font-bold border border-red-200"
-                    >
-                      <XCircle className="w-4 h-4" />
-                      Reject
-                    </button>
-                  </>
-                )}
-                {restaurant.isApproved && (
-                  <button
-                    onClick={() => toggleBlock(restaurant.id)}
-                    className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-sm font-bold ${
-                      restaurant.isBlocked
-                        ? "bg-green-50 text-green-600 border border-green-200"
-                        : "bg-red-50 text-red-500 border border-red-200"
-                    }`}
-                  >
-                    <Ban className="w-4 h-4" />
-                    {restaurant.isBlocked ? "Unblock" : "Block"}
-                  </button>
-                )}
-                {restaurant.isBlocked && (
-                  <button
-                    onClick={() => toggleBlock(restaurant.id)}
-                    className="flex-1 flex items-center justify-center gap-1.5 py-2.5 bg-green-50 text-green-600 rounded-xl text-sm font-bold border border-green-200"
-                  >
-                    <CheckCircle className="w-4 h-4" />
-                    Unblock
-                  </button>
-                )}
-              </div>
-            </div>
+            <h1 className="text-2xl font-black text-slate-950">Merchant Management</h1>
+            <p className="mt-1 text-sm font-semibold text-slate-500">Review approvals, monitor performance, and control merchant access.</p>
           </div>
-        ))}
+
+          <div className="relative w-full lg:w-96">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+            <input
+              type="text"
+              placeholder="Search merchant, owner, phone..."
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              className="w-full rounded-lg border border-slate-200 bg-white py-2.5 pl-10 pr-4 text-sm font-semibold outline-none focus:border-rose-300 focus:ring-4 focus:ring-rose-50"
+            />
+          </div>
+        </div>
+
+        <div className="flex gap-2 overflow-x-auto">
+          {(Object.keys(tabCounts) as TabType[]).map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className={`flex shrink-0 items-center gap-2 rounded-lg px-3 py-2 text-sm font-black ${
+                activeTab === tab ? "bg-slate-950 text-white" : "border border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+              }`}
+            >
+              {tab}
+              <span className={activeTab === tab ? "text-white/70" : "text-slate-400"}>{tabCounts[tab]}</span>
+            </button>
+          ))}
+        </div>
+
+        <section className="overflow-hidden rounded-lg border border-slate-200 bg-white">
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[980px] text-left">
+              <thead className="border-b border-slate-200 bg-slate-50 text-xs font-black uppercase tracking-wide text-slate-500">
+                <tr>
+                  <th className="px-4 py-3">Merchant</th>
+                  <th className="px-4 py-3">Owner</th>
+                  <th className="px-4 py-3">Phone</th>
+                  <th className="px-4 py-3">Orders</th>
+                  <th className="px-4 py-3">Revenue</th>
+                  <th className="px-4 py-3">Status</th>
+                  <th className="px-4 py-3 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {filtered.map((restaurant) => {
+                  const status = statusFor(restaurant);
+                  return (
+                    <tr key={restaurant.id} className={restaurant.isBlocked ? "bg-red-50/40" : "hover:bg-slate-50/70"}>
+                      <td className="px-4 py-4">
+                        <div className="font-black text-slate-950">{restaurant.name}</div>
+                        <div className="mt-1 text-xs font-semibold text-slate-500">{restaurant.category} / {restaurant.address}</div>
+                      </td>
+                      <td className="px-4 py-4 text-sm font-semibold text-slate-700">{merchantOwners[restaurant.id]}</td>
+                      <td className="px-4 py-4 text-sm font-semibold text-slate-600">{restaurant.phone}</td>
+                      <td className="px-4 py-4 text-sm font-black text-slate-950">{restaurant.totalOrders.toLocaleString()}</td>
+                      <td className="px-4 py-4 text-sm font-black text-slate-950">{money(restaurant.totalEarnings)}</td>
+                      <td className="px-4 py-4"><StatusBadge status={status} /></td>
+                      <td className="px-4 py-4">
+                        <div className="flex justify-end gap-2">
+                          {!restaurant.isApproved && !restaurant.isBlocked && (
+                            <>
+                              <button
+                                onClick={() => approve(restaurant.id)}
+                                className="inline-flex items-center gap-1 rounded-lg bg-emerald-50 px-3 py-2 text-xs font-black text-emerald-700 hover:bg-emerald-100"
+                              >
+                                <CheckCircle className="h-3.5 w-3.5" />
+                                Approve
+                              </button>
+                              <button
+                                onClick={() => reject(restaurant.id)}
+                                className="inline-flex items-center gap-1 rounded-lg bg-red-50 px-3 py-2 text-xs font-black text-red-700 hover:bg-red-100"
+                              >
+                                <XCircle className="h-3.5 w-3.5" />
+                                Reject
+                              </button>
+                            </>
+                          )}
+                          {restaurant.isApproved && (
+                            <button
+                              onClick={() => toggleBlock(restaurant.id)}
+                              className={`inline-flex items-center gap-1 rounded-lg px-3 py-2 text-xs font-black ${
+                                restaurant.isBlocked
+                                  ? "bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
+                                  : "bg-red-50 text-red-700 hover:bg-red-100"
+                              }`}
+                            >
+                              {restaurant.isBlocked ? <CheckCircle className="h-3.5 w-3.5" /> : <Ban className="h-3.5 w-3.5" />}
+                              {restaurant.isBlocked ? "Unblock" : "Block"}
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </section>
       </div>
     </div>
   );

@@ -28,6 +28,7 @@ import { AdminDashboard } from "./components/admin/AdminDashboard";
 import { RestaurantManagement } from "./components/admin/RestaurantManagement";
 import { UserManagement } from "./components/admin/UserManagement";
 import { ReportsPage } from "./components/admin/ReportsPage";
+import { MerchantPortal } from "./components/merchant/MerchantPortal";
 
 export const router = createBrowserRouter([
   { path: "/", loader: () => redirect("/food") },
@@ -80,4 +81,6 @@ export const router = createBrowserRouter([
       { path: "reports", Component: ReportsPage },
     ],
   },
+
+  { path: "/merchant", Component: MerchantPortal },
 ]);
